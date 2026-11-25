@@ -2,6 +2,8 @@
 
 Predict `LATE` (departure delay ≥15 minutes) for ATL, ORD and LAX two hours before scheduled departure. Run commands from the repository root. The shared entry point is `train.py`. Run any one model independently using its command below. Every model uses the same four chronological validation folds.
 
+[Jump to the model code and commands](#3-run-a-model).
+
 ## Completed reference runs
 
 All eleven model choices passed the continuous 20,000-row smoke check. Full-size four-fold reference runs are available for the constant baseline and schedule-only HistGB in [benchmarks/schedule](benchmarks/schedule), and for 35-feature HistGB in [benchmarks/full](benchmarks/full). Both use default parameters and seeds 11, 23 and 42. The folders include results, per-fold and per-seed runtimes, and column audits. The full folder also contains five recomputed history windows and their contributing IDs. The remaining model choices have smoke results only in this run.
@@ -35,19 +37,19 @@ The trainer checks the 41-column schema, unique row IDs, two-hour timestamps, la
 
 Each command trains one model on the full feature set using all eligible training rows and seeds 11, 23 and 42. Each writes to its own output directory. Use `--jobs 2` on a smaller machine.
 
-| Model | Pipeline | Run from the repository root |
+| Model implementation | Pipeline | Run from the repository root |
 |---|---|---|
-| Constant baseline | Predict the training fold’s late fraction for every flight. | `python train.py --models constant --out runs/constant` |
-| Decision Tree | One-hot preprocessing followed by a depth-limited, pruned tree. | `python train.py --models decision_tree --out runs/decision_tree` |
-| Random Forest | One-hot preprocessing followed by an ensemble of randomized trees. | `python train.py --models random_forest --out runs/random_forest` |
-| AdaBoost | One-hot preprocessing followed by boosting with shallow decision trees. | `python train.py --models adaboost --out runs/adaboost` |
-| Logistic Regression | Scaled one-hot matrix followed by logistic regression. | `python train.py --models logreg --out runs/logreg` |
-| PCA + Logistic Regression | Same scaled matrix and classifier as logreg, with PCA retaining 95% of training variance. | `python train.py --models pca_logreg --out runs/pca_logreg` |
-| Gradient Boosting (sklearn) | One-hot preprocessing followed by sequential gradient-boosted trees. | `python train.py --models gradient --out runs/gradient` |
-| Histogram Gradient Boosting | Fold-trained ordinal categories, native missing values and fixed boosting iterations. | `python train.py --models histgb --out runs/histgb` |
-| XGBoost | Fold-aligned pandas categories and categorical histogram splits. | `python train.py --models xgboost --out runs/xgboost` |
-| LightGBM | Fold-aligned pandas categories and native categorical splits. | `python train.py --models lightgbm --out runs/lightgbm` |
-| CatBoost | String categories with an explicit missing token and chronological training order. | `python train.py --models catboost --out runs/catboost` |
+| [Constant baseline](person2/person2_pipeline.py#L239) | Predict the training fold’s late fraction for every flight. | `python train.py --models constant --out runs/constant` |
+| [Decision Tree](person2/person2_pipeline.py#L241) | One-hot preprocessing followed by a depth-limited, pruned tree. | `python train.py --models decision_tree --out runs/decision_tree` |
+| [Random Forest](person2/person2_pipeline.py#L243) | One-hot preprocessing followed by an ensemble of randomized trees. | `python train.py --models random_forest --out runs/random_forest` |
+| [AdaBoost](person2/person2_pipeline.py#L245) | One-hot preprocessing followed by boosting with shallow decision trees. | `python train.py --models adaboost --out runs/adaboost` |
+| [Logistic Regression](person2/person2_pipeline.py#L252) | Scaled one-hot matrix followed by logistic regression. | `python train.py --models logreg --out runs/logreg` |
+| [PCA + Logistic Regression](train.py#L150) | Same scaled matrix and classifier as logreg, with PCA retaining 95% of training variance. | `python train.py --models pca_logreg --out runs/pca_logreg` |
+| [Gradient Boosting (sklearn)](train.py#L140) | One-hot preprocessing followed by sequential gradient-boosted trees. | `python train.py --models gradient --out runs/gradient` |
+| [Histogram Gradient Boosting](train.py#L101) | Fold-trained ordinal categories, native missing values and fixed boosting iterations. | `python train.py --models histgb --out runs/histgb` |
+| [XGBoost](train.py#L112) | Fold-aligned pandas categories and categorical histogram splits. | `python train.py --models xgboost --out runs/xgboost` |
+| [LightGBM](train.py#L122) | Fold-aligned pandas categories and native categorical splits. | `python train.py --models lightgbm --out runs/lightgbm` |
+| [CatBoost](train.py#L128) | String categories with an explicit missing token and chronological training order. | `python train.py --models catboost --out runs/catboost` |
 
 **Preprocessing by family**
 
