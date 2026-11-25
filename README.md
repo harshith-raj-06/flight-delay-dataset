@@ -36,3 +36,5 @@ Airport history is a **rolling operational observation**. At each checkpoint T, 
 The build checks eligibility/label agreement, horizon-specific weather age and disjoint split membership. At each horizon it independently recomputes history and scheduled demand for 300 development flights. Weather uses report observation time as a proxy for availability. BTS supplies a retrospective schedule and event times without schedule-version or live publication timestamps. The build assumes schedule fields were known and departures observable at their event time.
 
 Sources: [BTS monthly archive](https://transtats.bts.gov/PREZIP/) and [IEM ASOS download](https://mesonet.agron.iastate.edu/request/download.phtml).
+
+For training setup, team assignments, chronological benchmarks and the final refit, see [train.md](train.md).

@@ -8,3 +8,7 @@ weather_raw/
 
 fresh_2025/
 final_csv/
+
+runs/
+
+!benchmarks/*/*.csv

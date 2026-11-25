@@ -20,6 +20,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.decomposition import PCA
 from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier
@@ -100,7 +101,7 @@ def build_expanding_folds(
     return folds
 
 
-class FoldPreprocessor:
+class FoldPreprocessor(TransformerMixin, BaseEstimator):
     """Fold-safe preprocessor matching the T-2h feature guide (~80 encoded features).
 
     - Learns top-20 Dest categories in the training fold (others -> 'Other')
@@ -113,7 +114,7 @@ class FoldPreprocessor:
         self.top_k_dest = top_k_dest
         self.top_dests_: set[str] = set()
         self.encoder = OneHotEncoder(handle_unknown="ignore", sparse_output=False, dtype=np.float32)
-        self.imputer = SimpleImputer(strategy="median")
+        self.imputer = SimpleImputer(strategy="median", keep_empty_features=True)
         self.scaler = StandardScaler()
         self.num_cols_: list[str] = []
         self.feature_names_: list[str] = []
@@ -130,7 +131,7 @@ class FoldPreprocessor:
 
         # Categorical preparation
         cat_df = pd.DataFrame(index=work.index)
-        for col in CAT_COLS:
+        for col in [name for name in CAT_COLS if name in work]:
             s = work[col].astype("string").fillna("__MISSING__")
             if col == "Dest":
                 if fit:
@@ -144,22 +145,24 @@ class FoldPreprocessor:
         num_df = work[self.num_cols_].astype(np.float32)
         return cat_df, num_df
 
-    def fit_transform(self, df: pd.DataFrame) -> np.ndarray:
+    def fit(self, df: pd.DataFrame, y=None):
         cat_df, num_df = self._prepare_frame(df, fit=True)
-        cat_arr = self.encoder.fit_transform(cat_df)
-        num_arr = self.imputer.fit_transform(num_df)
-        combined = np.hstack([num_arr, cat_arr]).astype(np.float32)
-        scaled = self.scaler.fit_transform(combined).astype(np.float32)
-        cat_names = list(self.encoder.get_feature_names_out(CAT_COLS))
-        self.feature_names_ = self.num_cols_ + cat_names
-        return scaled
+        self.imputer.fit(num_df)
+        self.feature_names_ = self.num_cols_.copy()
+        if cat_df.shape[1]:
+            self.encoder.fit(cat_df)
+            self.feature_names_ += list(self.encoder.get_feature_names_out())
+        self.scaler.fit(self._matrix(cat_df, num_df))
+        return self
+
+    def _matrix(self, cats, nums):
+        values = self.imputer.transform(nums)
+        if cats.shape[1]:
+            values = np.hstack([values, self.encoder.transform(cats)])
+        return values.astype(np.float32)
 
     def transform(self, df: pd.DataFrame) -> np.ndarray:
-        cat_df, num_df = self._prepare_frame(df, fit=False)
-        cat_arr = self.encoder.transform(cat_df)
-        num_arr = self.imputer.transform(num_df)
-        combined = np.hstack([num_arr, cat_arr]).astype(np.float32)
-        return self.scaler.transform(combined).astype(np.float32)
+        return self.scaler.transform(self._matrix(*self._prepare_frame(df, fit=False)))
 
 
 def get_tuning_slice(X: np.ndarray, y: np.ndarray, max_rows: int) -> tuple[np.ndarray, np.ndarray]:
