@@ -5,3 +5,6 @@ __pycache__/
 *_log.txt
 weather_raw/
 .DS_Store
+
+fresh_2025/
+final_csv/

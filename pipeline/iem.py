@@ -1,23 +1,22 @@
 """Attach IEM airport observations to flights as of each prediction checkpoint."""
 
-from datetime import datetime, timedelta, timezone
+import time
+from datetime import UTC, datetime, timedelta
 from email.utils import parsedate_to_datetime
 from io import BytesIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import time
 
 import airportsdata
 import pandas as pd
 import requests
-
 
 CHECKPOINT_HOURS = [2, 6]
 MAX_OBSERVATION_AGE = pd.Timedelta(hours=3)
 REQUEST_PAUSE_SECONDS = 10
 REQUEST_ATTEMPTS = 3
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[1] / "fresh_2025"
 FLIGHTS = ROOT / "flights_raw.parquet"
 WEATHER_CACHE = ROOT / "weather_raw"
 WEATHER_PARQUET = ROOT / "weather_raw.parquet"
@@ -40,7 +39,7 @@ class DownloadError(RuntimeError):
 
 
 def log_download(message):
-    timestamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    timestamp = datetime.now(UTC).isoformat(timespec="seconds")
     with DOWNLOAD_LOG.open("a", encoding="utf-8") as log:
         print(f"{timestamp} {message}", file=log)
 
@@ -66,7 +65,7 @@ def retry_after_seconds(response):
     if header.isdecimal():
         return int(header)
     try:
-        return max(0, (parsedate_to_datetime(header) - datetime.now(timezone.utc)).total_seconds())
+        return max(0, (parsedate_to_datetime(header) - datetime.now(UTC)).total_seconds())
     except (TypeError, ValueError):
         return 0
 
