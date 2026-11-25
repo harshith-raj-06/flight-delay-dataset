@@ -12,3 +12,5 @@ final_csv/
 runs/
 
 !benchmarks/*/*.csv
+
+!person2_result/**
