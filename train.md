@@ -1,6 +1,6 @@
 # Training the two-hour departure-delay model
 
-Predict `LATE` (departure delay ≥15 minutes) for ATL, ORD and LAX two hours before scheduled departure. Run commands from the repository root. The shared entry point is `train.py`. It reuses the Person 2 preprocessing and estimator builders and uses the same four forward folds for every team member.
+Predict `LATE` (departure delay ≥15 minutes) for ATL, ORD and LAX two hours before scheduled departure. Run commands from the repository root. The shared entry point is `train.py`. Run any one model independently using its command below. Every model uses the same four chronological validation folds.
 
 ## Completed reference runs
 
@@ -19,7 +19,7 @@ python -m pip show scikit-learn
 
 Use the existing final export or reproduce it using the three build commands in [README.md](README.md). Training needs **train_T2h.csv**, **validation_T2h.csv** and **fresh_2025/output_with_weather.parquet** from the same build. The Parquet supplies actual departure times for fold eligibility and independent history checks. For other directory layouts pass `--data-dir PATH --events FILE`. Development runs and the refit command read only development CSVs and request pre-December source events. December CSVs are unnecessary for these commands.
 
-## 2. Person 1: verify the data and run the first benchmark
+## 2. Verify the inputs
 
 ```bash
 python train.py --smoke --models constant histgb --stage schedule --seeds 11 --out runs/quick_schedule
@@ -31,20 +31,27 @@ The smoke test takes the first 20,000 development rows in checkpoint order, plac
 
 The trainer checks the 41-column schema, unique row IDs, two-hour timestamps, label agreement with BTS, weather age, condition-code flags and the five historical activity values for five fixed validation flights. Inspect `history_checks.csv` for the source row IDs included in each window. It prints weather-code availability, unmatched weather and actual train/validation late rates. Class balance can vary substantially across months. The holiday feature is already present and is taken directly from the export. `wx_obs_time` is the audit timestamp.
 
-## 3. Persons 2 and 3: run comparable benchmarks
+## 3. Run a model
 
-| Owner | Development command |
-|---|---|
-| Person 2: tree models | `python train.py --models decision_tree random_forest adaboost --out runs/trees` |
-| Person 2: PCA comparison | `python train.py --models logreg pca_logreg --out runs/pca` |
-| Person 3: sklearn boosting | `python train.py --models gradient histgb --out runs/sklearn_boost` |
-| Person 3: external boosting | `python train.py --models xgboost lightgbm catboost --out runs/native_boost` |
+Each command trains one model on the full feature set using all eligible training rows and seeds 11, 23 and 42. Each writes to its own output directory. Use `--jobs 2` on a smaller machine.
 
-The default is the full 35-feature set, all eligible training rows, four validation folds and seeds 11, 23 and 42. Use `--jobs 2` on a smaller machine. Each score records elapsed fit-plus-predict time. Use the shared entry point for comparable scores. The earlier standalone Person 2 script applies a scheduled-time buffer to later folds; the shared entry point checks actual label availability directly.
+| Model | Pipeline | Run from the repository root |
+|---|---|---|
+| Constant baseline | Predict the training fold’s late fraction for every flight. | `python train.py --models constant --out runs/constant` |
+| Decision Tree | One-hot preprocessing followed by a depth-limited, pruned tree. | `python train.py --models decision_tree --out runs/decision_tree` |
+| Random Forest | One-hot preprocessing followed by an ensemble of randomized trees. | `python train.py --models random_forest --out runs/random_forest` |
+| AdaBoost | One-hot preprocessing followed by boosting with shallow decision trees. | `python train.py --models adaboost --out runs/adaboost` |
+| Logistic Regression | Scaled one-hot matrix followed by logistic regression. | `python train.py --models logreg --out runs/logreg` |
+| PCA + Logistic Regression | Same scaled matrix and classifier as logreg, with PCA retaining 95% of training variance. | `python train.py --models pca_logreg --out runs/pca_logreg` |
+| Gradient Boosting (sklearn) | One-hot preprocessing followed by sequential gradient-boosted trees. | `python train.py --models gradient --out runs/gradient` |
+| Histogram Gradient Boosting | Fold-trained ordinal categories, native missing values and fixed boosting iterations. | `python train.py --models histgb --out runs/histgb` |
+| XGBoost | Fold-aligned pandas categories and categorical histogram splits. | `python train.py --models xgboost --out runs/xgboost` |
+| LightGBM | Fold-aligned pandas categories and native categorical splits. | `python train.py --models lightgbm --out runs/lightgbm` |
+| CatBoost | String categories with an explicit missing token and chronological training order. | `python train.py --models catboost --out runs/catboost` |
 
 **Preprocessing by family**
 
-- Tree, RF, AdaBoost, sklearn Gradient Boosting and logistic regression use the fold-trained Person 2 transformer. It adds four hour/month cyclic terms, groups destinations outside the fold’s top 20, one-hot encodes categoricals, median-imputes numeric columns and scales the matrix. PCA and plain logistic regression share this preprocessing and the same classifier. PCA retains 95% of training variance and logs the actual component count.
+- Tree, RF, AdaBoost, sklearn Gradient Boosting and logistic regression use the shared fold-trained transformer. It adds four hour/month cyclic terms, groups destinations outside the fold’s top 20, one-hot encodes categoricals, median-imputes numeric columns and scales the matrix. PCA and plain logistic regression share this preprocessing and the same classifier. PCA retains 95% of training variance and logs the actual component count.
 - HistGradientBoosting uses ordinal encoding learned on the training fold, up to 254 categories per field, explicitly marked categorical inputs and native numeric missing values. Unknown categories map to missing. Automatic early stopping is disabled.
 - XGBoost uses pandas categories and categorical histogram splits. LightGBM receives fold-aligned pandas categories. CatBoost receives named string categoricals, a missing-category token and chronological training order. The benchmark uses fixed iteration budgets and no random validation split.
 - The allowlist excludes the target, IDs, timestamps and current-flight outcomes. The full feature set includes the approved past-airport mean delay. The output column audit records exactly which predictors were used in each run.
@@ -58,7 +65,7 @@ python train.py --models decision_tree --params '{"max_depth":14,"ccp_alpha":0.0
 
 Repeat the chosen configuration without the row cap before comparing it with other full-fold runs. Keep a record of attempted settings. A validation score used to select settings is a development estimate.
 
-## 4. Person 4: compare scores, run ablations and lock the final model
+## 4. Compare scores, run ablations and lock the final model
 
 The validation blocks are Sep 1–21, Sep 22–Oct 12, Oct 13–Nov 2 and Nov 3–28, 2025. A fold trains on earlier local flight dates whose checkpoints and actual departure times precede the first validation checkpoint. Earlier validation flights can join a later training fold once eligible. Chronological gaps and old ATL holdout exclusions from the export still apply.
 
@@ -74,7 +81,7 @@ done
 
 Stages use 7, 10, 30 and 35 predictors. Cloud cover enters with weather. For sensitivity to historical delay, append `--drop prior_mean_delay_60min_T2h`. To exclude prior delay results also drop `late_rate_60min_T2h`. Removing all outcome-derived activity also requires dropping `n_departed_60min_T2h` and `has_history_T2h`. Schedule-only demand can stay.
 
-**What each owner hands over**
+**Outputs from each model run**
 
 - `results.csv` has mean and sample standard deviation across folds, after averaging seed scores within each fold. A smoke run has one fold and hence no fold standard deviation.
 - `fold_scores.csv` contains fold/seed metrics, class balances, row counts, runtimes and PCA statistics where applicable.

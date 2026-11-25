@@ -37,4 +37,4 @@ The build checks eligibility/label agreement, horizon-specific weather age and d
 
 Sources: [BTS monthly archive](https://transtats.bts.gov/PREZIP/) and [IEM ASOS download](https://mesonet.agron.iastate.edu/request/download.phtml).
 
-For training setup, team assignments, chronological benchmarks and the final refit, see [train.md](train.md).
+For training setup, individual model commands, chronological benchmarks and the final refit, see [train.md](train.md).
