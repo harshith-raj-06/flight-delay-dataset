@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.csv
+*.parquet
+*_log.txt
+weather_raw/
+.DS_Store
