@@ -47,5 +47,25 @@
     "ap": 0.36667460157683995,
     "roc_auc": 0.6761112509089195,
     "late_rate": 0.2019538973996663
+  },
+  "model_key": "decision_tree",
+  "seeds": [
+    11,
+    23,
+    42
+  ],
+  "final_depth": 16,
+  "final_n_leaves": 836,
+  "early_stopping": "none",
+  "approved_exceptions": [],
+  "importance_method": "DecisionTreeClassifier.feature_importances_ (normalized Gini impurity reduction)",
+  "predictions_rows": 326343,
+  "package_versions": {
+    "python": "3.12.9",
+    "numpy": "2.5.3",
+    "pandas": "3.0.6",
+    "scikit-learn": "1.9.1",
+    "joblib": "1.6.0",
+    "pyarrow": "26.0.1"
   }
 }
