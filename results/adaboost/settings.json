@@ -1,0 +1,173 @@
+{
+  "model_key": "adaboost",
+  "code_commit": "66c89101f9ca7ddb3b2e0cf8a5ed32440756303d",
+  "run_command": "adaboost.py --out runs/adaboost --workers 2 --resume",
+  "package_versions": {
+    "python": "3.12.9",
+    "numpy": "2.5.3",
+    "pandas": "3.0.6",
+    "scikit-learn": "1.9.1",
+    "joblib": "1.6.0",
+    "pyarrow": "26.0.1"
+  },
+  "features": [
+    "month",
+    "dow",
+    "dep_hour",
+    "arr_hour",
+    "CRSElapsedTime",
+    "Distance",
+    "is_holiday",
+    "Origin",
+    "Dest",
+    "Reporting_Airline",
+    "wx_skyc1_T2h",
+    "wx_tmpf_T2h",
+    "wx_dwpf_T2h",
+    "wx_drct_T2h",
+    "wx_sknt_T2h",
+    "wx_gust_T2h",
+    "wx_vsby_T2h",
+    "wx_p01i_T2h",
+    "wx_skyl1_T2h",
+    "wx_obs_age_min_T2h",
+    "wx_ts_T2h",
+    "wx_fg_T2h",
+    "wx_ra_T2h",
+    "wx_sn_T2h",
+    "wx_fz_T2h",
+    "wx_br_hz_T2h",
+    "wx_gust_missing_T2h",
+    "wx_skyl1_missing_T2h",
+    "codes_known_T2h",
+    "wx_unmatched_T2h",
+    "n_departed_60min_T2h",
+    "prior_mean_delay_60min_T2h",
+    "late_rate_60min_T2h",
+    "n_scheduled_next_60min_T2h",
+    "has_history_T2h"
+  ],
+  "grid": {
+    "max_depth": [
+      2,
+      3
+    ],
+    "min_samples_leaf": [
+      200,
+      500
+    ],
+    "learning_rate": [
+      0.05,
+      0.15,
+      0.4
+    ],
+    "n_estimators": [
+      20,
+      40,
+      60,
+      80,
+      100
+    ]
+  },
+  "boundary_extensions_tested": [
+    {
+      "base": {
+        "max_depth": 1,
+        "min_samples_leaf": 500,
+        "learning_rate": 0.4
+      },
+      "checkpoints": [
+        20,
+        40,
+        60,
+        80,
+        100
+      ]
+    },
+    {
+      "base": {
+        "max_depth": 2,
+        "min_samples_leaf": 1000,
+        "learning_rate": 0.4
+      },
+      "checkpoints": [
+        20,
+        40,
+        60,
+        80,
+        100
+      ]
+    },
+    {
+      "base": {
+        "max_depth": 2,
+        "min_samples_leaf": 500,
+        "learning_rate": 0.8
+      },
+      "checkpoints": [
+        20,
+        40,
+        60,
+        80,
+        100
+      ]
+    },
+    {
+      "base": {
+        "max_depth": 2,
+        "min_samples_leaf": 500,
+        "learning_rate": 0.4
+      },
+      "checkpoints": [
+        20,
+        40,
+        60,
+        80,
+        100,
+        125,
+        150,
+        175
+      ]
+    }
+  ],
+  "best_params": {
+    "max_depth": 2,
+    "min_samples_leaf": 500,
+    "learning_rate": 0.8,
+    "n_estimators": 100
+  },
+  "selected_n_estimators": 100,
+  "seeds": [
+    11,
+    23,
+    42
+  ],
+  "tuning_seed": 11,
+  "refit_seed": 11,
+  "refit_seconds": 143.38,
+  "development_rows": 726979,
+  "early_stopping": "none (staged_predict_proba evaluated exact iteration checkpoints on Folds 1-2 using 100% of training rows)",
+  "approved_exceptions": [],
+  "importance_method": "AdaBoostClassifier.feature_importances_ (normalized weighted Gini impurity reduction across DecisionTreeClassifier base estimators)",
+  "fold_summary": {
+    "fold_3": {
+      "ap": 0.3277906504884687,
+      "roc_auc": 0.6639007303691566,
+      "lift": 1.5816263520667244,
+      "late_rate": 0.20724910789463133
+    },
+    "fold_4": {
+      "ap": 0.41337267866539246,
+      "roc_auc": 0.7014072403968704,
+      "lift": 2.101980264241816,
+      "late_rate": 0.1966586869047012
+    },
+    "mean_folds_3_4": {
+      "ap": 0.3705816645769306,
+      "roc_auc": 0.6826539853830136,
+      "lift": 1.8418033081542702,
+      "late_rate": 0.20195389739966627
+    }
+  },
+  "predictions_rows": 326343
+}

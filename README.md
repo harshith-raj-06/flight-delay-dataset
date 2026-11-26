@@ -77,7 +77,7 @@ Development uses four expanding chronological folds, with one full empty local c
 
 `preprocessing.py` is shared by everyone. It loads the development data, builds the chronological folds and selects the right encoding from your model key, fitting it inside each training fold. You supply only your estimator and your hyperparameter grid. Do not write your own folds, metrics or preprocessing.
 
-`decision_tree.py` is one worked example of a model script. Copy its structure for your model.
+`models/decision_tree.py` is one worked example of a model script (all shared model scripts live under `models/` and write outputs under `results/`). Copy its structure for your model.
 
 | Model key | Preprocessing supplied by the pipeline |
 |---|---|
@@ -114,7 +114,7 @@ Use the same tuning and evaluation blocks across teammates. Here `test_*` in skl
 **Example: decision tree**
 
 ```
-python decision_tree.py --out runs/decision_tree
+python models/decision_tree.py --out results/decision_tree
 ```
 
 Use an empty output directory. The script searches depth, minimum leaf size and pruning strength on folds 1–2, selects by average precision, and evaluates the locked settings on folds 3–4 with seeds 11, 23 and 42. It saves the fold scores, predictions and a fitted preprocessing-plus-tree pipeline. The final refit uses all development flights.

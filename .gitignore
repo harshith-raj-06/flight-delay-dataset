@@ -2,6 +2,10 @@
 __pycache__/
 *.csv
 *.parquet
+!results/**/*.csv
+!results/**/*.parquet
+!person3/outputs/*.csv
+!person3/outputs/*.parquet
 *_log.txt
 weather_raw/
 .DS_Store
@@ -10,3 +14,4 @@ fresh_2025/
 final_csv/
 
 runs/
+catboost_info/

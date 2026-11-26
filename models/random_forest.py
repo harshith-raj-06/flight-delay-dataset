@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import sys
 from pathlib import Path
 from time import perf_counter
 
@@ -12,6 +13,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import average_precision_score, roc_auc_score
 from sklearn.model_selection import ParameterGrid
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from preprocessing import (
     FEATURES,
     TARGET,
@@ -117,5 +119,5 @@ def run(output):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--out", type=Path, default=Path("runs/random_forest"))
+    parser.add_argument("--out", type=Path, default=Path("results/random_forest"))
     run(parser.parse_args().out)

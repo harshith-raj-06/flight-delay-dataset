@@ -1,18 +1,19 @@
-"""Tune a T-2h AdaBoost ensemble on folds 1-2, evaluate on 3-4 and save a development refit."""
+"""Tune T-2h logistic regression on folds 1-2, evaluate on 3-4 and save a development refit."""
 
 import argparse
 import json
+import sys
 from pathlib import Path
 from time import perf_counter
 
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import AdaBoostClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import average_precision_score, roc_auc_score
 from sklearn.model_selection import ParameterGrid
-from sklearn.tree import DecisionTreeClassifier
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from preprocessing import (
     FEATURES,
     TARGET,
@@ -23,17 +24,14 @@ from preprocessing import (
 
 SEEDS = (11, 23, 42)
 GRID = {
-    "max_depth": [1, 2, 3],
-    "n_estimators": [50, 100],
-    "learning_rate": [0.1, 0.5],
+    "C": [0.01, 0.1, 1.0, 10.0],
 }
 
 
-def make_adaboost(seed, params):
-    p = dict(params)
-    base_depth = p.pop("max_depth", 2)
-    base = DecisionTreeClassifier(max_depth=base_depth, random_state=seed)
-    return AdaBoostClassifier(estimator=base, random_state=seed, **p)
+def make_logreg(seed, params):
+    return LogisticRegression(
+        random_state=seed, max_iter=1000, solver="lbfgs", **params
+    )
 
 
 def run(output):
@@ -44,7 +42,9 @@ def run(output):
     tuning, evaluation = [], []
     best = None
     for fold, train, val in development_folds(dev):
-        prep = model_pipeline("adaboost", make_adaboost(SEEDS[0], {"max_depth": 2}))[0]
+        prep = model_pipeline(
+            "logistic_regression", make_logreg(SEEDS[0], {})
+        )[0]
         X = prep.fit_transform(train[FEATURES]).astype(np.float32)
         V = prep.transform(val[FEATURES]).astype(np.float32)
         y, target = train[TARGET], val[TARGET]
@@ -57,7 +57,7 @@ def run(output):
         for params in configs:
             for seed in seeds:
                 start = perf_counter()
-                model = make_adaboost(seed, params).fit(X, y)
+                model = make_logreg(seed, params).fit(X, y)
                 prob = model.predict_proba(V)[:, 1]
                 row = dict(
                     fold=fold,
@@ -86,13 +86,9 @@ def run(output):
                 ["ap", "roc_auc"]
             ].mean()
             winner = ranking.sort_values(
-                ["ap", "roc_auc", "n_estimators"], ascending=[False, False, True]
+                ["ap", "roc_auc", "C"], ascending=[False, False, True]
             ).iloc[0]
-            best = {
-                "max_depth": int(winner.max_depth),
-                "n_estimators": int(winner.n_estimators),
-                "learning_rate": float(winner.learning_rate),
-            }
+            best = {"C": float(winner.C)}
             print("Selected", best, flush=True)
         del X, V
     results = pd.DataFrame(evaluation)
@@ -100,10 +96,10 @@ def run(output):
     means = results.groupby("fold")[["ap", "roc_auc", "late_rate"]].mean()
     print(means.to_string(), flush=True)
     print("Mean across evaluation folds", means.mean().to_dict(), flush=True)
-    final = model_pipeline("adaboost", make_adaboost(SEEDS[0], best)).fit(
+    final = model_pipeline("logistic_regression", make_logreg(SEEDS[0], best)).fit(
         dev[FEATURES], dev[TARGET]
     )
-    joblib.dump(final, output / "adaboost.joblib", compress=3)
+    joblib.dump(final, output / "logistic_regression.joblib", compress=3)
     (output / "settings.json").write_text(
         json.dumps(
             {
@@ -121,5 +117,5 @@ def run(output):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--out", type=Path, default=Path("runs/adaboost"))
+    parser.add_argument("--out", type=Path, default=Path("results/logistic_regression"))
     run(parser.parse_args().out)
