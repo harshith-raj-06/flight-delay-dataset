@@ -1,7 +1,7 @@
 {
   "model_key": "adaboost",
-  "code_commit": "66c89101f9ca7ddb3b2e0cf8a5ed32440756303d",
-  "run_command": "adaboost.py --out runs/adaboost --workers 2 --resume",
+  "code_commit": "d99eecef97fedded96485ee182b52bf5d2e82e5e",
+  "run_command": "models/adaboost.py --out runs/adaboost-rerun-FdFLZz --workers 4",
   "package_versions": {
     "python": "3.12.9",
     "numpy": "2.5.3",
@@ -144,7 +144,7 @@
   ],
   "tuning_seed": 11,
   "refit_seed": 11,
-  "refit_seconds": 143.38,
+  "refit_seconds": 157.19,
   "development_rows": 726979,
   "early_stopping": "none (staged_predict_proba evaluated exact iteration checkpoints on Folds 1-2 using 100% of training rows)",
   "approved_exceptions": [],

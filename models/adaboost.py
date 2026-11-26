@@ -86,7 +86,7 @@ def _run_staged_worker(task):
         staged_probs = {}
         if actual_iters > 0:
             for step, proba in enumerate(model.staged_predict_proba(V), start=1):
-                if step in ckpt_set:
+                if step in ckpt_set or step == actual_iters:
                     staged_probs[step] = proba[:, 1].copy()
         pred_elapsed = perf_counter() - pred_start
 
@@ -130,7 +130,7 @@ def _run_staged_worker(task):
             )
     except Exception as exc:  # noqa: BLE001
         elapsed = perf_counter() - start
-        for k in checkpoints:
+        for k in checkpoints[len(rows):]:
             rows.append(
                 {
                     **base_params,
@@ -180,6 +180,7 @@ def _run_eval_worker(task):
     return {
         "fold": fold,
         "seed": seed,
+        **params,
         "train_rows": len(y),
         "validation_rows": len(target),
         "late_rate": late_rate,
@@ -199,10 +200,19 @@ def _base_configs_from_grid():
     return configs
 
 
+def _valid_scores(table):
+    return table.loc[np.isfinite(table[["ap", "roc_auc"]]).all(axis=1)]
+
+
 def _select_winner(tuning_df):
-    valid = tuning_df.dropna(subset=["ap", "roc_auc"]).copy()
+    valid = _valid_scores(tuning_df)
+    valid = valid[valid.fold.isin((1, 2))]
     group_cols = ["max_depth", "min_samples_leaf", "learning_rate", "n_estimators"]
-    ranking = valid.groupby(group_cols, as_index=False)[["ap", "roc_auc"]].mean()
+    valid = valid.drop_duplicates(group_cols + ["fold"], keep="last")
+    complete = valid.groupby(group_cols)["fold"].transform("count").eq(2)
+    if not complete.any():
+        raise ValueError("No AdaBoost configuration has finite scores on both tuning folds")
+    ranking = valid[complete].groupby(group_cols, as_index=False)[["ap", "roc_auc"]].mean()
     winner = ranking.sort_values(
         ["ap", "roc_auc", "n_estimators", "max_depth"],
         ascending=[False, False, True, True],
@@ -299,8 +309,11 @@ def _prepare_fold_cache(cache, sample_params):
     """Prepare and mmap-cache all 4 folds once, then free raw DataFrame memory."""
     dev = load_development()
     for fold, train, val in development_folds(dev):
-        if (cache / f"X_{fold}.npy").exists():
+        marker = cache / f"complete_{fold}"
+        files = [cache / f"{key}_{fold}.npy" for key in ("X", "V", "y", "t", "id")]
+        if marker.exists() and all(path.is_file() for path in files):
             continue
+        marker.unlink(missing_ok=True)
         prep = model_pipeline("adaboost", make_adaboost(SEEDS[0], sample_params))["prep"]
         X = prep.fit_transform(train[FEATURES]).astype(np.float32)
         V = prep.transform(val[FEATURES]).astype(np.float32)
@@ -309,12 +322,19 @@ def _prepare_fold_cache(cache, sample_params):
         np.save(cache / f"y_{fold}.npy", train[TARGET].to_numpy(dtype=np.int8))
         np.save(cache / f"t_{fold}.npy", val[TARGET].to_numpy(dtype=np.int8))
         np.save(cache / f"id_{fold}.npy", val.index.to_numpy())
+        marker.touch()
         print(f"Cached fold {fold}: {len(train):,} train, {len(val):,} val", flush=True)
         del X, V, prep
     dev_rows = len(dev)
     del dev
     gc.collect()
     return dev_rows
+
+
+def _save_checkpoint(table, path):
+    temporary = path.with_suffix(".tmp")
+    table.to_csv(temporary, index=False)
+    temporary.replace(path)
 
 
 def _seen_keys(tuning_rows):
@@ -344,7 +364,7 @@ def run(output, workers=2, resume=False):
     dev_rows = _prepare_fold_cache(cache, sample_params)
 
     tuning_path = output / "tuning.csv"
-    tuning_rows = pd.read_csv(tuning_path).to_dict("records") if (resume and tuning_path.exists()) else []
+    tuning_rows = _valid_scores(pd.read_csv(tuning_path)).to_dict("records") if (resume and tuning_path.exists()) else []
     seen = _seen_keys(tuning_rows)
 
     # Tune on folds 1-2.
@@ -358,7 +378,7 @@ def run(output, workers=2, resume=False):
                 not in seen
             ]
             if missing:
-                tasks.append((cfg, N_ESTIMATORS_CHECKPOINTS, fold, SEEDS[0], str(cache)))
+                tasks.append((cfg, missing, fold, SEEDS[0], str(cache)))
 
     if tasks:
         t0 = perf_counter()
@@ -369,7 +389,7 @@ def run(output, workers=2, resume=False):
                     if key not in seen:
                         tuning_rows.append(row)
                         seen.add(key)
-                pd.DataFrame(tuning_rows).to_csv(tuning_path, index=False)
+                _save_checkpoint(pd.DataFrame(tuning_rows), tuning_path)
                 best_row = max(batch, key=lambda r: r["ap"] if not np.isnan(r["ap"]) else -1.0)
                 print(
                     f"[tune f{f_id}] {base_p} -> best n={best_row['n_estimators']} AP={best_row['ap']:.5f} ({dt:.1f}s)",
@@ -378,7 +398,13 @@ def run(output, workers=2, resume=False):
         print(f"Finished base tuning batch in {perf_counter() - t0:.1f}s", flush=True)
 
     tuning_df = pd.read_csv(tuning_path)
-    best = _select_winner(tuning_df)
+    initial = tuning_df[
+        tuning_df.max_depth.isin(BASE_GRID["max_depth"])
+        & tuning_df.min_samples_leaf.isin(BASE_GRID["min_samples_leaf"])
+        & tuning_df.learning_rate.isin(BASE_GRID["learning_rate"])
+        & tuning_df.n_estimators.isin(N_ESTIMATORS_CHECKPOINTS)
+    ]
+    best = _select_winner(initial)
     print("Initial tuning winner:", best, flush=True)
 
     # Check boundary extensions on folds 1-2 if winner hits a grid boundary.
@@ -407,7 +433,7 @@ def run(output, workers=2, resume=False):
                         if key not in seen:
                             tuning_rows.append(row)
                             seen.add(key)
-                    pd.DataFrame(tuning_rows).to_csv(tuning_path, index=False)
+                    _save_checkpoint(pd.DataFrame(tuning_rows), tuning_path)
                     best_row = max(batch, key=lambda r: r["ap"] if not np.isnan(r["ap"]) else -1.0)
                     print(
                         f"[ext f{f_id}] {base_p} -> best n={best_row['n_estimators']} AP={best_row['ap']:.5f} ({dt:.1f}s)",
@@ -420,7 +446,8 @@ def run(output, workers=2, resume=False):
     # Evaluate locked parameters on folds 3-4 across seeds 11, 23, 42.
     eval_path = output / "evaluation.csv"
     eval_rows = pd.read_csv(eval_path).to_dict("records") if (resume and eval_path.exists()) else []
-    done_eval = {(int(r["fold"]), int(r["seed"])) for r in eval_rows}
+    done_eval = {(int(r["fold"]), int(r["seed"])) for r in eval_rows
+                 if all(r.get(key) == value for key, value in best.items())}
     eval_tasks = [
         (fold, seed, best, str(cache), str(output))
         for fold in (3, 4)
@@ -432,14 +459,14 @@ def run(output, workers=2, resume=False):
             for row in pool.imap_unordered(_run_eval_worker, eval_tasks):
                 eval_rows = [r for r in eval_rows if (int(r["fold"]), int(r["seed"])) != (int(row["fold"]), int(row["seed"]))]
                 eval_rows.append(row)
-                pd.DataFrame(eval_rows).sort_values(["fold", "seed"]).to_csv(eval_path, index=False)
+                _save_checkpoint(pd.DataFrame(eval_rows).sort_values(["fold", "seed"]), eval_path)
                 print(
                     f"[eval f{row['fold']} seed={row['seed']}] AP={row['ap']:.5f} AUC={row['roc_auc']:.5f} ({row['seconds']:.1f}s)",
                     flush=True,
                 )
 
     eval_df = pd.read_csv(eval_path).sort_values(["fold", "seed"]).reset_index(drop=True)
-    eval_df.to_csv(eval_path, index=False)
+    _save_checkpoint(eval_df, eval_path)
 
     pred_files = [output / f"_pred_{fold}_{seed}.parquet" for fold in (3, 4) for seed in SEEDS]
     predictions = pd.concat([pd.read_parquet(p) for p in pred_files], ignore_index=True)
