@@ -4,6 +4,27 @@ Predict `LATE` (departure delay ≥15 minutes) for ATL, ORD and LAX two hours be
 
 [Jump to the model code and commands](#3-run-a-model).
 
+## Final preprocessing and validation split
+
+Run `python preprocessing.py` from the repository root after setup to verify all four development folds. The [shared preprocessing file](preprocessing.py) loads the development CSVs, checks timestamp and label alignment, constructs chronological folds and supplies unfitted model-specific transformers. All commands in this guide use it through `train.py`. For a custom estimator, select `train[cols]` and `validation[cols]` from one fold, call `make_preprocessor(model_name, cols)`, fit it on the selected training rows and transform the validation rows with the fitted instance. Fit PCA within the same training fold if applicable.
+
+For example, this prepares one-hot matrices for a custom decision tree:
+
+```python
+from preprocessing import ALL, ROOT, read_dev, raw_events, folds, make_preprocessor
+
+dev = read_dev(ROOT / "final_csv")
+events = raw_events(ROOT / "fresh_2025/output_with_weather.parquet", dev)
+for fold_id, train_rows, val_rows in folds(dev, events.actual.loc[dev.index]):
+    prep = make_preprocessor("decision_tree", ALL)
+    X_train = prep.fit_transform(train_rows[ALL])
+    X_val = prep.transform(val_rows[ALL])
+    y_train, y_val = train_rows.LATE, val_rows.LATE
+    # Fit and evaluate your estimator here for this fold.
+```
+
+**Why these folds?** The alternative `bench.py` protocol pools the development files and validates monthly from July through November. It leaves one full local day before each validation block and assigns July–September to tuning. Its optional training cap samples rows randomly after preprocessing. On these exports its five gaps admitted zero training labels that arrived after the first validation checkpoint. The chosen four-fold protocol evaluates exactly the 207,704 rows in the September–November validation CSV, uses actual departure UTC to enforce label availability, and applies any training cap chronologically before fitting transforms. Both are forward splits. Their scores cover different flights and should be reported separately. Reserve later folds before inspecting scores if you need a separate development confirmation period.
+
 ## Completed reference runs
 
 All eleven model choices passed the continuous 20,000-row smoke check. Full-size four-fold reference runs are available for the constant baseline and schedule-only HistGB in [benchmarks/schedule](benchmarks/schedule), and for 35-feature HistGB in [benchmarks/full](benchmarks/full). Both use default parameters and seeds 11, 23 and 42. The folders include results, per-fold and per-seed runtimes, and column audits. The full folder also contains five recomputed history windows and their contributing IDs. The remaining model choices have smoke results only in this run.
@@ -44,12 +65,12 @@ Each command trains one model on the full feature set using all eligible trainin
 | [Random Forest](person2/person2_pipeline.py#L243) | One-hot preprocessing followed by an ensemble of randomized trees. | `python train.py --models random_forest --out runs/random_forest` |
 | [AdaBoost](person2/person2_pipeline.py#L245) | One-hot preprocessing followed by boosting with shallow decision trees. | `python train.py --models adaboost --out runs/adaboost` |
 | [Logistic Regression](person2/person2_pipeline.py#L252) | Scaled one-hot matrix followed by logistic regression. | `python train.py --models logreg --out runs/logreg` |
-| [PCA + Logistic Regression](train.py#L150) | Same scaled matrix and classifier as logreg, with PCA retaining 95% of training variance. | `python train.py --models pca_logreg --out runs/pca_logreg` |
-| [Gradient Boosting (sklearn)](train.py#L140) | One-hot preprocessing followed by sequential gradient-boosted trees. | `python train.py --models gradient --out runs/gradient` |
-| [Histogram Gradient Boosting](train.py#L101) | Fold-trained ordinal categories, native missing values and fixed boosting iterations. | `python train.py --models histgb --out runs/histgb` |
-| [XGBoost](train.py#L112) | Fold-aligned pandas categories and categorical histogram splits. | `python train.py --models xgboost --out runs/xgboost` |
-| [LightGBM](train.py#L122) | Fold-aligned pandas categories and native categorical splits. | `python train.py --models lightgbm --out runs/lightgbm` |
-| [CatBoost](train.py#L128) | String categories with an explicit missing token and chronological training order. | `python train.py --models catboost --out runs/catboost` |
+| [PCA + Logistic Regression](train.py#L104) | Same scaled matrix and classifier as logreg, with PCA retaining 95% of training variance. | `python train.py --models pca_logreg --out runs/pca_logreg` |
+| [Gradient Boosting (sklearn)](train.py#L94) | One-hot preprocessing followed by sequential gradient-boosted trees. | `python train.py --models gradient --out runs/gradient` |
+| [Histogram Gradient Boosting](train.py#L57) | Fold-trained ordinal categories, native missing values and fixed boosting iterations. | `python train.py --models histgb --out runs/histgb` |
+| [XGBoost](train.py#L67) | Fold-aligned pandas categories and categorical histogram splits. | `python train.py --models xgboost --out runs/xgboost` |
+| [LightGBM](train.py#L77) | Fold-aligned pandas categories and native categorical splits. | `python train.py --models lightgbm --out runs/lightgbm` |
+| [CatBoost](train.py#L83) | String categories with an explicit missing token and chronological training order. | `python train.py --models catboost --out runs/catboost` |
 
 **Preprocessing by family**
 

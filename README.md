@@ -11,12 +11,12 @@ Run the command for your model from the repository root. Click the model name to
 | [Random Forest](person2/person2_pipeline.py#L243) | `python train.py --models random_forest --out runs/random_forest` |
 | [AdaBoost](person2/person2_pipeline.py#L245) | `python train.py --models adaboost --out runs/adaboost` |
 | [Logistic Regression](person2/person2_pipeline.py#L252) | `python train.py --models logreg --out runs/logreg` |
-| [PCA + Logistic Regression](train.py#L150) | `python train.py --models pca_logreg --out runs/pca_logreg` |
-| [Gradient Boosting (sklearn)](train.py#L140) | `python train.py --models gradient --out runs/gradient` |
-| [Histogram Gradient Boosting](train.py#L101) | `python train.py --models histgb --out runs/histgb` |
-| [XGBoost](train.py#L112) | `python train.py --models xgboost --out runs/xgboost` |
-| [LightGBM](train.py#L122) | `python train.py --models lightgbm --out runs/lightgbm` |
-| [CatBoost](train.py#L128) | `python train.py --models catboost --out runs/catboost` |
+| [PCA + Logistic Regression](train.py#L104) | `python train.py --models pca_logreg --out runs/pca_logreg` |
+| [Gradient Boosting (sklearn)](train.py#L94) | `python train.py --models gradient --out runs/gradient` |
+| [Histogram Gradient Boosting](train.py#L57) | `python train.py --models histgb --out runs/histgb` |
+| [XGBoost](train.py#L67) | `python train.py --models xgboost --out runs/xgboost` |
+| [LightGBM](train.py#L77) | `python train.py --models lightgbm --out runs/lightgbm` |
+| [CatBoost](train.py#L83) | `python train.py --models catboost --out runs/catboost` |
 
 Each command writes scores to its own folder under `runs/`. For preprocessing, tuning and the meaning of each output, see [train.md](train.md).
 
