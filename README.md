@@ -2,31 +2,43 @@
 
 ## Shared preprocessing for teammates
 
-Use [preprocessing.py](preprocessing.py) to load the T-2h development files, get the fixed 35 input columns, create four chronological validation folds, and fit an encoder separately on each fold's training data. The code does not choose or train a model. Your own model code should import its feature list and fold generator.
+Each teammate supplies an estimator and a parameter grid. [preprocessing.py](preprocessing.py) selects its encoding, fits preprocessing inside each training fold, and uses all 35 approved T−2h predictors. The four expanding folds validate September 1–21, September 22–October 12, October 13–November 2 and November 3–28, with one full local calendar day between training and validation. December is reserved for the final evaluation.
+
+### Example for a teammate's model script
+
+The pattern below accepts the estimator returned by your own factory, such as `make_tree(seed)`. Parameter names use the `model__` prefix so sklearn tunes the estimator inside the pipeline.
 
 ```python
-from preprocessing import FEATURES, load_development, development_folds, make_preprocessor
+from sklearn.model_selection import GridSearchCV, cross_validate
+from sklearn.tree import DecisionTreeClassifier
+from preprocessing import FEATURES, TARGET, chronological_cv, load_development, model_pipeline
 
-development = load_development()
-for fold, train, validation in development_folds(development):
-    transformer = make_preprocessor("onehot", FEATURES)
-    X_train = transformer.fit_transform(train[FEATURES])
-    X_validation = transformer.transform(validation[FEATURES])
-    y_train, y_validation = train.LATE, validation.LATE
-    # Fit and evaluate your chosen model here.
+dev = load_development()
+X, y = dev[FEATURES], dev[TARGET]
+folds = chronological_cv(dev)
+pipe = model_pipeline("decision_tree", DecisionTreeClassifier(random_state=11))
+grid = {"model__max_depth": [6, 12], "model__min_samples_leaf": [20, 100]}
+
+search = GridSearchCV(pipe, grid, scoring="average_precision", cv=folds[:2], refit=False)
+search.fit(X, y)
+pipe.set_params(**search.best_params_)
+scores = cross_validate(pipe, X, y, cv=folds[2:],
+                        scoring=["average_precision", "roc_auc"])
+print(search.best_params_, scores["test_average_precision"], scores["test_roc_auc"])
 ```
 
-Use all 35 inputs unless the team explicitly agrees to a documented ablation. Keep the same feature list across folds and models. Choose the input representation your estimator supports.
+Use the same tuning and evaluation blocks across teammates. In this example, sklearn's `test_*` outputs are scores on the later **development validation folds**. Earlier experiments already evaluated those months. Use a fresh pipeline per run and record the parameters, seeds, fold scores and runtime. For stochastic models repeat the locked settings with seeds 11, 23 and 42.
 
-| Estimator family | Input representation |
+| Pass this model key | Preprocessing supplied by the pipeline |
 |---|---|
-| Decision Tree, Random Forest, AdaBoost, standard sklearn Gradient Boosting | `make_preprocessor("onehot", FEATURES)` |
-| Models requiring scaled input, or PCA before a classifier | `make_preprocessor("onehot_scaled", FEATURES)`. Fit PCA on each fold's transformed training rows. |
-| Histogram Gradient Boosting with categorical indices | `make_preprocessor("ordinal", FEATURES)`. The categorical columns occupy the first four output positions. Numeric missing values stay missing. |
-| XGBoost and LightGBM using native categorical support | `categorical_frame(train, FEATURES)` and `categorical_frame(validation, FEATURES)`. Keep the category handling consistent with the library's training API. |
-| CatBoost using categorical field names | `categorical_frame(...)`, then convert the four categorical fields to strings if required by the CatBoost version. |
+| `decision_tree`, `random_forest`, `adaboost`, `gradient_boosting` | One-hot categories, top 20 destinations plus Other, training-median numeric imputation |
+| `logistic_regression` | Same one-hot encoding, with numeric scaling fitted on training rows |
+| `pca_logistic_regression` | Same scaled input, then PCA retaining 95% of training variance. Supply the same logistic classifier for both variants. |
+| `histgb` | Ordinal categories marked categorical, numeric missing values preserved, automatic early stopping disabled |
+| `xgboost`, `lightgbm` | Named pandas categorical fields with training-fold category levels. Unseen categories become missing. XGBoost categorical support is enabled. |
+| `catboost` | Named string categories, explicit missing-category token and numeric missing values preserved |
 
-The top 20 destination categories and every encoder, imputer, scaler or PCA are learned from the current fold's training rows. Validation rows use those fitted objects. The four validation blocks cover September 1 through November 28. Each fold leaves a full calendar day before its validation block. The final December CSV is reserved for the agreed final evaluation after model and feature choices are fixed.
+Install the library for the estimator you choose. When moving an older script from `bench.py`, keep its estimator factory and grid, then use the pipeline and search pattern above. The older benchmark used five monthly folds starting in July. Use identical validation dates when comparing implementations.
 
 ## Reproduce
 

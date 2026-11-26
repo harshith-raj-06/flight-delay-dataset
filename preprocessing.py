@@ -3,8 +3,9 @@
 from pathlib import Path
 
 import pandas as pd
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.base import BaseEstimator, TransformerMixin, clone
 from sklearn.compose import ColumnTransformer
+from sklearn.decomposition import PCA
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder, StandardScaler
@@ -127,6 +128,17 @@ class TopDestinations(BaseEstimator, TransformerMixin):
         return column.where(column.isin(self.keep_), "Other").to_numpy().reshape(-1, 1)
 
 
+class EmptyColumnGuard(TransformerMixin, BaseEstimator):
+    """Represent numeric inputs entirely missing during fit by a fixed constant."""
+
+    def fit(self, X, y=None):
+        self.empty_ = X.columns[X.isna().all()]
+        return self
+
+    def transform(self, X):
+        return X.assign(**{col: 0.0 for col in self.empty_})
+
+
 def make_preprocessor(kind, features=FEATURES):
     """Return an unfitted transformer: onehot, onehot_scaled, or ordinal."""
     if (
@@ -150,7 +162,9 @@ def make_preprocessor(kind, features=FEATURES):
                             (
                                 "encode",
                                 OrdinalEncoder(
-                                    handle_unknown="use_encoded_value", unknown_value=-1
+                                    handle_unknown="use_encoded_value",
+                                    unknown_value=-1,
+                                    max_categories=254,
                                 ),
                             ),
                         ]
@@ -159,7 +173,7 @@ def make_preprocessor(kind, features=FEATURES):
                 )
             )
         if nums:
-            parts.append(("numeric", "passthrough", nums))
+            parts.append(("numeric", EmptyColumnGuard(), nums))
         return ColumnTransformer(parts, sparse_threshold=0)
     if kind not in ("onehot", "onehot_scaled"):
         raise ValueError("kind must be onehot, onehot_scaled, or ordinal")
@@ -223,6 +237,79 @@ def categorical_frame(frame, features=FEATURES):
                 result[name].astype("string").fillna("__MISSING__").astype("category")
             )
     return result
+
+
+# Only the representation and input requirements live here. The caller supplies
+# the estimator, hyperparameters and seed.
+ENCODING = {
+    "decision_tree": "onehot",
+    "random_forest": "onehot",
+    "adaboost": "onehot",
+    "gradient_boosting": "onehot",
+    "logistic_regression": "onehot_scaled",
+    "pca_logistic_regression": "onehot_scaled",
+    "histgb": "ordinal",
+    "xgboost": "category",
+    "lightgbm": "category",
+    "catboost": "string",
+}
+
+
+class NativeInputs(TransformerMixin, BaseEstimator):
+    """Preserve column names and learn a consistent category vocabulary per fold."""
+
+    def __init__(self, kind):
+        self.kind = kind
+
+    def fit(self, X, y=None):
+        self.levels_ = {c: list(X[c].dropna().unique()) for c in CATEGORICAL}
+        return self
+
+    def transform(self, X):
+        frame = X[FEATURES].copy()
+        for col, levels in self.levels_.items():
+            if self.kind == "string":
+                frame[col] = (
+                    frame[col].astype("string").fillna("__MISSING__").astype(object)
+                )
+            else:
+                frame[col] = pd.Categorical(
+                    frame[col].where(frame[col].isin(levels)), categories=levels
+                )
+        return frame
+
+
+def model_pipeline(model_name, estimator):
+    """Wrap a teammate's unfitted estimator with its agreed T-2h preprocessing."""
+    if model_name not in ENCODING:
+        raise ValueError(f"Choose a model key from {list(ENCODING)}")
+    kind = ENCODING[model_name]
+    prep = (
+        NativeInputs(kind)
+        if kind in ("category", "string")
+        else make_preprocessor(kind)
+    )
+    model = clone(estimator)
+    if model_name == "histgb":
+        model.set_params(
+            categorical_features=list(range(len(CATEGORICAL))), early_stopping=False
+        )
+    elif model_name == "xgboost":
+        model.set_params(enable_categorical=True)
+    elif model_name == "catboost":
+        model.set_params(cat_features=list(CATEGORICAL))
+    steps = [("prep", prep)]
+    if model_name == "pca_logistic_regression":
+        steps.append(("pca", PCA(n_components=0.95, svd_solver="full")))
+    return Pipeline([*steps, ("model", model)])
+
+
+def chronological_cv(dev):
+    """Positional fold indices for sklearn search and cross-validation on dev in this order."""
+    return [
+        (dev.index.get_indexer(train.index), dev.index.get_indexer(val.index))
+        for _, train, val in development_folds(dev)
+    ]
 
 
 if __name__ == "__main__":
