@@ -40,6 +40,14 @@ Use the same tuning and evaluation blocks across teammates. In this example, skl
 
 Install the library for the estimator you choose. When moving an older script from `bench.py`, keep its estimator factory and grid, then use the pipeline and search pattern above. The older benchmark used five monthly folds starting in July. Use identical validation dates when comparing implementations.
 
+## Run the decision tree
+
+```bash
+python decision_tree.py --out runs/decision_tree
+```
+
+Use an empty output directory. The script searches depth, minimum leaf size and pruning strength on the first two development folds, selects by average precision, and evaluates the locked settings on the last two folds with seeds 11, 23 and 42. It saves the fold scores, predictions and a fitted preprocessing-plus-tree pipeline. The final refit uses all development flights. December is reserved for final project evaluation.
+
 ## Reproduce
 
 Use Python 3.12 or later in a virtual environment, from the repository root.
