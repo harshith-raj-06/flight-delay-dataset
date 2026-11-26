@@ -1,30 +1,32 @@
 # Flight departure delay at ATL, ORD and LAX
 
-## Train a model
+## Shared preprocessing for teammates
 
-Run the command for your model from the repository root. Click the model name to read its implementation. All commands use the same T−2h dataset and chronological validation folds. For installation and required data files, see [training setup](train.md#1-set-up-the-environment-and-inputs).
+Use [preprocessing.py](preprocessing.py) to load the T-2h development files, get the fixed 35 input columns, create four chronological validation folds, and fit an encoder separately on each fold's training data. The code does not choose or train a model. Your own model code should import its feature list and fold generator.
 
-| Model code | Training command |
+```python
+from preprocessing import FEATURES, load_development, development_folds, make_preprocessor
+
+development = load_development()
+for fold, train, validation in development_folds(development):
+    transformer = make_preprocessor("onehot", FEATURES)
+    X_train = transformer.fit_transform(train[FEATURES])
+    X_validation = transformer.transform(validation[FEATURES])
+    y_train, y_validation = train.LATE, validation.LATE
+    # Fit and evaluate your chosen model here.
+```
+
+Use all 35 inputs unless the team explicitly agrees to a documented ablation. Keep the same feature list across folds and models. Choose the input representation your estimator supports.
+
+| Estimator family | Input representation |
 |---|---|
-| [Constant baseline](person2/person2_pipeline.py#L239) | `python train.py --models constant --out runs/constant` |
-| [Decision Tree](person2/person2_pipeline.py#L241) | `python train.py --models decision_tree --out runs/decision_tree` |
-| [Random Forest](person2/person2_pipeline.py#L243) | `python train.py --models random_forest --out runs/random_forest` |
-| [AdaBoost](person2/person2_pipeline.py#L245) | `python train.py --models adaboost --out runs/adaboost` |
-| [Logistic Regression](person2/person2_pipeline.py#L252) | `python train.py --models logreg --out runs/logreg` |
-| [PCA + Logistic Regression](train.py#L104) | `python train.py --models pca_logreg --out runs/pca_logreg` |
-| [Gradient Boosting (sklearn)](train.py#L94) | `python train.py --models gradient --out runs/gradient` |
-| [Histogram Gradient Boosting](train.py#L57) | `python train.py --models histgb --out runs/histgb` |
-| [XGBoost](train.py#L67) | `python train.py --models xgboost --out runs/xgboost` |
-| [LightGBM](train.py#L77) | `python train.py --models lightgbm --out runs/lightgbm` |
-| [CatBoost](train.py#L83) | `python train.py --models catboost --out runs/catboost` |
+| Decision Tree, Random Forest, AdaBoost, standard sklearn Gradient Boosting | `make_preprocessor("onehot", FEATURES)` |
+| Models requiring scaled input, or PCA before a classifier | `make_preprocessor("onehot_scaled", FEATURES)`. Fit PCA on each fold's transformed training rows. |
+| Histogram Gradient Boosting with categorical indices | `make_preprocessor("ordinal", FEATURES)`. The categorical columns occupy the first four output positions. Numeric missing values stay missing. |
+| XGBoost and LightGBM using native categorical support | `categorical_frame(train, FEATURES)` and `categorical_frame(validation, FEATURES)`. Keep the category handling consistent with the library's training API. |
+| CatBoost using categorical field names | `categorical_frame(...)`, then convert the four categorical fields to strings if required by the CatBoost version. |
 
-Each command writes scores to its own folder under `runs/`. For preprocessing, tuning and the meaning of each output, see [train.md](train.md).
-
-### What the folders contain
-
-- `pipeline/` downloads BTS flights and joins IEM weather. Use it when rebuilding the dataset.
-- `benchmarks/` contains saved validation scores and audits from completed reference runs.
-- `person2/` and `person3/` contain earlier scripts and notebooks. The shared trainer imports preprocessing and estimator definitions from `person2/`. Run the commands above for any model, regardless of who is training it.
+The top 20 destination categories and every encoder, imputer, scaler or PCA are learned from the current fold's training rows. Validation rows use those fitted objects. The four validation blocks cover September 1 through November 28. Each fold leaves a full calendar day before its validation block. The final December CSV is reserved for the agreed final evaluation after model and feature choices are fixed.
 
 ## Reproduce
 
@@ -60,5 +62,3 @@ Airport history is a **rolling operational observation**. At each checkpoint T, 
 The build checks eligibility/label agreement, horizon-specific weather age and disjoint split membership. At each horizon it independently recomputes history and scheduled demand for 300 development flights. Weather uses report observation time as a proxy for availability. BTS supplies a retrospective schedule and event times without schedule-version or live publication timestamps. The build assumes schedule fields were known and departures observable at their event time.
 
 Sources: [BTS monthly archive](https://transtats.bts.gov/PREZIP/) and [IEM ASOS download](https://mesonet.agron.iastate.edu/request/download.phtml).
-
-For training setup, individual model commands, chronological benchmarks and the final refit, see [train.md](train.md).
