@@ -17,7 +17,7 @@ from sklearn.base import BaseEstimator
 from sklearn.metrics import average_precision_score, roc_auc_score
 from sklearn.model_selection import ParameterGrid
 
-# `python person3/train_*.py` starts with person3/ on sys.path, so add the
+# `python models/train_*.py` starts with models/ on sys.path, so add the
 # repository root explicitly before importing the shared teammate contract.
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 if str(REPOSITORY_ROOT) not in sys.path:

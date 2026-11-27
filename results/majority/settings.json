@@ -1,0 +1,91 @@
+{
+  "model_key": "majority",
+  "code_commit": "486ae6fb3aa69aa01f0d9063e8198934870bf563",
+  "run_command": "models/majority.py --out results/majority",
+  "package_versions": {
+    "python": "3.12.9",
+    "numpy": "2.5.3",
+    "pandas": "3.0.6",
+    "scikit-learn": "1.9.1",
+    "joblib": "1.6.0",
+    "pyarrow": "26.0.1"
+  },
+  "features": [
+    "month",
+    "dow",
+    "dep_hour",
+    "arr_hour",
+    "CRSElapsedTime",
+    "Distance",
+    "is_holiday",
+    "Origin",
+    "Dest",
+    "Reporting_Airline",
+    "wx_skyc1_T2h",
+    "wx_tmpf_T2h",
+    "wx_dwpf_T2h",
+    "wx_drct_T2h",
+    "wx_sknt_T2h",
+    "wx_gust_T2h",
+    "wx_vsby_T2h",
+    "wx_p01i_T2h",
+    "wx_skyl1_T2h",
+    "wx_obs_age_min_T2h",
+    "wx_ts_T2h",
+    "wx_fg_T2h",
+    "wx_ra_T2h",
+    "wx_sn_T2h",
+    "wx_fz_T2h",
+    "wx_br_hz_T2h",
+    "wx_gust_missing_T2h",
+    "wx_skyl1_missing_T2h",
+    "codes_known_T2h",
+    "wx_unmatched_T2h",
+    "n_departed_60min_T2h",
+    "prior_mean_delay_60min_T2h",
+    "late_rate_60min_T2h",
+    "n_scheduled_next_60min_T2h",
+    "has_history_T2h"
+  ],
+  "grid": {},
+  "boundary_extensions_tested": [],
+  "best_params": {
+    "strategy": "prior"
+  },
+  "seeds": [
+    11,
+    23,
+    42
+  ],
+  "tuning_seed": 11,
+  "refit_seed": 11,
+  "refit_seconds": 2.46,
+  "development_rows": 726979,
+  "early_stopping": "none (majority-class prior baseline requires no tuning)",
+  "approved_exceptions": [],
+  "fold_summary": {
+    "fold_3": {
+      "ap": 0.20724910789463133,
+      "roc_auc": 0.5,
+      "lift": 1.0,
+      "late_rate": 0.20724910789463133,
+      "ap_seed_std": 0.0,
+      "roc_auc_seed_std": 0.0
+    },
+    "fold_4": {
+      "ap": 0.19665868690470126,
+      "roc_auc": 0.5,
+      "lift": 1.0,
+      "late_rate": 0.19665868690470126,
+      "ap_seed_std": 0.0,
+      "roc_auc_seed_std": 0.0
+    },
+    "mean_folds_3_4": {
+      "ap": 0.2019538973996663,
+      "roc_auc": 0.5,
+      "lift": 1.0,
+      "late_rate": 0.2019538973996663
+    }
+  },
+  "predictions_rows": 326343
+}

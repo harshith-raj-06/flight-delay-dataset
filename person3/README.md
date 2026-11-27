@@ -4,12 +4,12 @@ This folder holds Person 3's reproducible model entry points and completed bench
 
 ## Completed model results
 
-The finished full-data artifacts are committed under `person3/runs/`:
+The finished full-data artifacts are committed under `results/`:
 
-- `lightgbm/`
-- `xgboost/`
-- `catboost/`
-- `histgb/` (the documented scalable sklearn boosting substitute)
+- `results/lightgbm/`
+- `results/xgboost/`
+- `results/catboost/`
+- `results/histgb/` (the documented scalable sklearn boosting substitute)
 
 Each completed model folder contains tuning records, locked fold-3/4 evaluation scores, per-seed probability predictions, settings, and a refitted development model. `feature_importances.csv` is present when the estimator exposes native importances; HistGradientBoosting does not.
 
@@ -43,14 +43,14 @@ python preprocessing.py
 
 ## Model commands
 
-Each command requires a new, empty output directory. Existing `person3/runs/*` folders are completed artifacts and must not be reused for a rerun.
+Each command requires a new, empty output directory. Existing `results/*` folders are completed artifacts and must not be reused for a rerun.
 
 ```bash
-caffeinate -i python person3/train_gradient_boosting.py --out person3/runs/gradient_boosting_rerun
-caffeinate -i python person3/train_xgboost.py --out person3/runs/xgboost_rerun
-caffeinate -i python person3/train_lightgbm.py --out person3/runs/lightgbm_rerun
-caffeinate -i python person3/train_catboost.py --out person3/runs/catboost_rerun
-caffeinate -i python person3/train_histgb.py --out person3/runs/histgb_rerun
+caffeinate -i python models/train_gradient_boosting.py --out results/gradient_boosting_rerun
+caffeinate -i python models/train_xgboost.py --out results/xgboost_rerun
+caffeinate -i python models/train_lightgbm.py --out results/lightgbm_rerun
+caffeinate -i python models/train_catboost.py --out results/catboost_rerun
+caffeinate -i python models/train_histgb.py --out results/histgb_rerun
 ```
 
 AdaBoost is maintained with the shared team model scripts under `models/adaboost.py`, so it does not have a duplicate Person 3 entry point.

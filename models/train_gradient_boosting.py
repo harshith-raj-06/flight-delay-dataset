@@ -25,7 +25,7 @@ def make_estimator(seed, params):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--out", type=Path, default=Path("runs/gradient_boosting"))
+    parser.add_argument("--out", type=Path, default=Path("results/gradient_boosting"))
     args = parser.parse_args()
     run_benchmark(
         model_key="gradient_boosting",

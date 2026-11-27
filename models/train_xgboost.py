@@ -1,9 +1,9 @@
-"""Run Person 3's LightGBM benchmark locally."""
+"""Run Person 3's XGBoost benchmark locally."""
 
 import argparse
 from pathlib import Path
 
-from lightgbm import LGBMClassifier
+from xgboost import XGBClassifier
 
 from benchmark_runner import run_benchmark
 
@@ -14,30 +14,30 @@ GRID = {
 
 
 def make_estimator(seed, params):
-    return LGBMClassifier(
-        objective="binary",
-        num_leaves=63,
-        min_child_samples=100,
+    return XGBClassifier(
+        objective="binary:logistic",
+        eval_metric="aucpr",
+        tree_method="hist",
+        max_depth=7,
+        min_child_weight=20,
         subsample=0.85,
         colsample_bytree=0.85,
-        reg_lambda=1.0,
         n_jobs=-1,
         random_state=seed,
-        verbosity=-1,
         **params,
     )
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--out", type=Path, default=Path("runs/lightgbm"))
+    parser.add_argument("--out", type=Path, default=Path("results/xgboost"))
     args = parser.parse_args()
     run_benchmark(
-        model_key="lightgbm",
-        model_name="LGBMClassifier",
+        model_key="xgboost",
+        model_name="XGBClassifier",
         make_estimator=make_estimator,
         grid=GRID,
         iteration_parameter="n_estimators",
         output=args.out,
-        package_names=["lightgbm", "scikit-learn", "pandas", "numpy", "pyarrow", "joblib"],
-        notes="Native categorical LightGBM input supplied by preprocessing.py; no early stopping.",
+        package_names=["xgboost", "scikit-learn", "pandas", "numpy", "pyarrow", "joblib"],
+        notes="Native categorical XGBoost input supplied by preprocessing.py; no early stopping.",
     )
