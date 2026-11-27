@@ -1,52 +1,70 @@
-# Person 3 - Local T-2h model benchmarks
+# Person 3 - T-2h boosting benchmarks
 
-These commands follow the team protocol: 35 approved T-2h features, tuning only on folds 1-2 with seed 11, then locked evaluation on folds 3-4 with seeds 11, 23 and 42. December is never loaded.
+This folder holds Person 3's reproducible model entry points and completed benchmark artifacts. Every run uses the shared `preprocessing.py` contract: all 35 approved T-2h predictors, tuning on folds 1-2 with seed 11, locked evaluation on folds 3-4 with seeds 11, 23, and 42, and no December test data.
 
-## One-time local setup
+## Completed model results
 
-From the repository root, place `train_T2h.csv` and `validation_T2h.csv` in `final_csv/`, then run:
+The finished full-data artifacts are committed under `person3/runs/`:
+
+- `lightgbm/`
+- `xgboost/`
+- `catboost/`
+- `histgb/` (the documented scalable sklearn boosting substitute)
+
+Each completed model folder contains tuning records, locked fold-3/4 evaluation scores, per-seed probability predictions, settings, and a refitted development model. `feature_importances.csv` is present when the estimator exposes native importances; HistGradientBoosting does not.
+
+## Local setup
+
+Keep the large development CSVs local rather than committing them. The expected layout is:
+
+```text
+flight-delay-dataset/
+├── final_csv/
+│   ├── train_T2h.csv
+│   └── validation_T2h.csv
+└── person3/
+```
+
+From the repository root:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt xgboost lightgbm catboost joblib
+brew install libomp  # required by LightGBM on macOS
 ```
 
-Keep the laptop awake during a run:
+Verify the data and chronological folds before a new run:
 
 ```bash
-caffeinate -i
+python preprocessing.py
 ```
 
-## Run one model at a time
+## Model commands
 
-Each command requires a new, empty output directory. Do not start more than one of these full-data benchmarks at once on the same laptop.
+Each command requires a new, empty output directory. Existing `person3/runs/*` folders are completed artifacts and must not be reused for a rerun.
 
 ```bash
-python person3/train_adaboost.py --out runs/adaboost
-python person3/train_gradient_boosting.py --out runs/gradient_boosting
-python person3/train_xgboost.py --out runs/xgboost
-python person3/train_lightgbm.py --out runs/lightgbm
-python person3/train_catboost.py --out runs/catboost
+caffeinate -i python person3/train_gradient_boosting.py --out person3/runs/gradient_boosting_rerun
+caffeinate -i python person3/train_xgboost.py --out person3/runs/xgboost_rerun
+caffeinate -i python person3/train_lightgbm.py --out person3/runs/lightgbm_rerun
+caffeinate -i python person3/train_catboost.py --out person3/runs/catboost_rerun
+caffeinate -i python person3/train_histgb.py --out person3/runs/histgb_rerun
 ```
 
-`train_histgb.py` is the documented scalable substitute for classic sklearn gradient boosting. Use it only if the team agrees that the classic gradient-boosting run is impractical, and record that substitution in the handoff:
+AdaBoost is maintained with the shared team model scripts under `models/adaboost.py`, so it does not have a duplicate Person 3 entry point.
 
-```bash
-python person3/train_histgb.py --out runs/histgb
-```
+## Required artifact set
 
-## Required output in each model folder
+Every complete model folder contains:
 
-Each successful run produces:
+- `tuning.csv` and `tuning_ranking.csv`
+- `learning_curve.csv`
+- `evaluation.csv`
+- `predictions.parquet`
+- `settings.json`
+- `model.joblib`
+- `feature_importances.csv` when supported by the estimator
 
-- `tuning.csv` - all 25 configurations on each tuning fold, including failures.
-- `tuning_ranking.csv` and `learning_curve.csv` - model-selection evidence.
-- `evaluation.csv` - one row per fold/seed for folds 3-4.
-- `predictions.parquet` - `row_id`, fold, seed, target, and probability.
-- `settings.json` - grid, selected settings, command, package versions and code commit.
-- `model.joblib` - development refit using seed 11.
-- `feature_importances.csv` when the estimator exposes native importances.
-
-Before sharing a folder, verify that each seed has 49,882 predictions for fold 3 and 58,899 for fold 4.
+For each seed, predictions must contain 49,882 rows for fold 3 and 58,899 rows for fold 4.
