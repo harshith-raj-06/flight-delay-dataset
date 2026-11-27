@@ -1,0 +1,100 @@
+{
+  "model_key": "histgb",
+  "model_name": "HistGradientBoostingClassifier",
+  "code_commit": "6b2e4bca3095d9ced044e152f4a9bf8c42d7a2a8",
+  "run_command": "person3/train_histgb.py --out runs/histgb",
+  "package_versions": {
+    "scikit-learn": "1.9.1",
+    "pandas": "3.0.6",
+    "numpy": "2.5.3",
+    "pyarrow": "26.0.1",
+    "joblib": "1.6.0"
+  },
+  "features": [
+    "month",
+    "dow",
+    "dep_hour",
+    "arr_hour",
+    "CRSElapsedTime",
+    "Distance",
+    "is_holiday",
+    "Origin",
+    "Dest",
+    "Reporting_Airline",
+    "wx_skyc1_T2h",
+    "wx_tmpf_T2h",
+    "wx_dwpf_T2h",
+    "wx_drct_T2h",
+    "wx_sknt_T2h",
+    "wx_gust_T2h",
+    "wx_vsby_T2h",
+    "wx_p01i_T2h",
+    "wx_skyl1_T2h",
+    "wx_obs_age_min_T2h",
+    "wx_ts_T2h",
+    "wx_fg_T2h",
+    "wx_ra_T2h",
+    "wx_sn_T2h",
+    "wx_fz_T2h",
+    "wx_br_hz_T2h",
+    "wx_gust_missing_T2h",
+    "wx_skyl1_missing_T2h",
+    "codes_known_T2h",
+    "wx_unmatched_T2h",
+    "n_departed_60min_T2h",
+    "prior_mean_delay_60min_T2h",
+    "late_rate_60min_T2h",
+    "n_scheduled_next_60min_T2h",
+    "has_history_T2h"
+  ],
+  "tuning_grid": {
+    "max_iter": [
+      200,
+      350,
+      500,
+      700,
+      900
+    ],
+    "learning_rate": [
+      0.03,
+      0.05,
+      0.08,
+      0.12,
+      0.2
+    ]
+  },
+  "tuning_configurations": 25,
+  "tuning_folds": [
+    1,
+    2
+  ],
+  "best_parameters": {
+    "learning_rate": 0.05,
+    "max_iter": 500
+  },
+  "selection_rule": "highest mean AP; mean ROC-AUC breaks ties",
+  "evaluation_folds": [
+    3,
+    4
+  ],
+  "evaluation_seeds": [
+    11,
+    23,
+    42
+  ],
+  "early_stopping": "not used; iteration count is selected by chronological tuning folds and refit on full folds",
+  "approved_exceptions": [],
+  "notes": "Recorded substitution for classic sklearn GradientBoostingClassifier because the full-data protocol makes the histogram implementation practical.",
+  "evaluation_summary": [
+    {
+      "fold": 3,
+      "mean_ap": 0.3698678143947598,
+      "mean_roc_auc": 0.6881512459455736
+    },
+    {
+      "fold": 4,
+      "mean_ap": 0.4184275511502842,
+      "mean_roc_auc": 0.7080496673387499
+    }
+  ]
+}
