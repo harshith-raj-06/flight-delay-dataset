@@ -1,0 +1,133 @@
+{
+  "model_key": "pca_logistic_regression",
+  "code_commit": "unknown",
+  "run_command": "models/pca_logistic_regression.py --out /kaggle/working/pca_logistic_regression",
+  "package_versions": {
+    "python": "3.13.18",
+    "numpy": "2.1.3",
+    "pandas": "2.3.3",
+    "scikit-learn": "1.6.1",
+    "joblib": "1.6.0",
+    "pyarrow": "23.0.1"
+  },
+  "features": [
+    "month",
+    "dow",
+    "dep_hour",
+    "arr_hour",
+    "CRSElapsedTime",
+    "Distance",
+    "is_holiday",
+    "Origin",
+    "Dest",
+    "Reporting_Airline",
+    "wx_skyc1_T2h",
+    "wx_tmpf_T2h",
+    "wx_dwpf_T2h",
+    "wx_drct_T2h",
+    "wx_sknt_T2h",
+    "wx_gust_T2h",
+    "wx_vsby_T2h",
+    "wx_p01i_T2h",
+    "wx_skyl1_T2h",
+    "wx_obs_age_min_T2h",
+    "wx_ts_T2h",
+    "wx_fg_T2h",
+    "wx_ra_T2h",
+    "wx_sn_T2h",
+    "wx_fz_T2h",
+    "wx_br_hz_T2h",
+    "wx_gust_missing_T2h",
+    "wx_skyl1_missing_T2h",
+    "codes_known_T2h",
+    "wx_unmatched_T2h",
+    "n_departed_60min_T2h",
+    "prior_mean_delay_60min_T2h",
+    "late_rate_60min_T2h",
+    "n_scheduled_next_60min_T2h",
+    "has_history_T2h"
+  ],
+  "grid": {
+    "C": [
+      0.001,
+      0.003,
+      0.01,
+      0.03,
+      0.1,
+      0.3,
+      1.0,
+      3.0,
+      10.0,
+      30.0
+    ]
+  },
+  "boundary_extensions_tested": [],
+  "best_params": {
+    "C": 10.0
+  },
+  "seeds": [
+    11,
+    23,
+    42
+  ],
+  "tuning_seed": 11,
+  "refit_seed": 11,
+  "refit_seconds": 12.28,
+  "development_rows": 726979,
+  "early_stopping": "none",
+  "approved_exceptions": [],
+  "fold_summary": {
+    "fold_3": {
+      "ap": 0.3076155580239116,
+      "roc_auc": 0.644603150416587,
+      "lift": 1.484279286646233,
+      "late_rate": 0.20724910789463133,
+      "ap_seed_std": 0.0,
+      "roc_auc_seed_std": 0.0
+    },
+    "fold_4": {
+      "ap": 0.40112571980988404,
+      "roc_auc": 0.6858635911387624,
+      "lift": 2.0397050652751756,
+      "late_rate": 0.19665868690470126,
+      "ap_seed_std": 0.0,
+      "roc_auc_seed_std": 0.0
+    },
+    "mean_folds_3_4": {
+      "ap": 0.3543706389168978,
+      "roc_auc": 0.6652333707776747,
+      "lift": 1.7619921759607045,
+      "late_rate": 0.2019538973996663
+    }
+  },
+  "predictions_rows": 326343,
+  "pca_variance_threshold": 0.95,
+  "pca_components_per_fold": [
+    {
+      "fold": 1,
+      "input_features": 76,
+      "n_components": 30,
+      "explained_variance": 0.9542165398597717
+    },
+    {
+      "fold": 2,
+      "input_features": 76,
+      "n_components": 30,
+      "explained_variance": 0.9543600082397461
+    },
+    {
+      "fold": 3,
+      "input_features": 76,
+      "n_components": 31,
+      "explained_variance": 0.9557043313980103
+    },
+    {
+      "fold": 4,
+      "input_features": 76,
+      "n_components": 31,
+      "explained_variance": 0.9557167887687683
+    }
+  ],
+  "refit_n_components": 31,
+  "refit_explained_variance": 0.9557256170567878
+}

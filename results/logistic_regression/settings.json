@@ -1,0 +1,105 @@
+{
+  "model_key": "logistic_regression",
+  "code_commit": "unknown",
+  "run_command": "models/logistic_regression.py --out /kaggle/working/logistic_regression",
+  "package_versions": {
+    "python": "3.13.18",
+    "numpy": "2.1.3",
+    "pandas": "2.3.3",
+    "scikit-learn": "1.6.1",
+    "joblib": "1.6.0",
+    "pyarrow": "23.0.1"
+  },
+  "features": [
+    "month",
+    "dow",
+    "dep_hour",
+    "arr_hour",
+    "CRSElapsedTime",
+    "Distance",
+    "is_holiday",
+    "Origin",
+    "Dest",
+    "Reporting_Airline",
+    "wx_skyc1_T2h",
+    "wx_tmpf_T2h",
+    "wx_dwpf_T2h",
+    "wx_drct_T2h",
+    "wx_sknt_T2h",
+    "wx_gust_T2h",
+    "wx_vsby_T2h",
+    "wx_p01i_T2h",
+    "wx_skyl1_T2h",
+    "wx_obs_age_min_T2h",
+    "wx_ts_T2h",
+    "wx_fg_T2h",
+    "wx_ra_T2h",
+    "wx_sn_T2h",
+    "wx_fz_T2h",
+    "wx_br_hz_T2h",
+    "wx_gust_missing_T2h",
+    "wx_skyl1_missing_T2h",
+    "codes_known_T2h",
+    "wx_unmatched_T2h",
+    "n_departed_60min_T2h",
+    "prior_mean_delay_60min_T2h",
+    "late_rate_60min_T2h",
+    "n_scheduled_next_60min_T2h",
+    "has_history_T2h"
+  ],
+  "grid": {
+    "C": [
+      0.001,
+      0.003,
+      0.01,
+      0.03,
+      0.1,
+      0.3,
+      1.0,
+      3.0,
+      10.0,
+      30.0
+    ]
+  },
+  "boundary_extensions_tested": [],
+  "best_params": {
+    "C": 0.01
+  },
+  "seeds": [
+    11,
+    23,
+    42
+  ],
+  "tuning_seed": 11,
+  "refit_seed": 11,
+  "refit_seconds": 14.16,
+  "development_rows": 726979,
+  "early_stopping": "none",
+  "approved_exceptions": [],
+  "fold_summary": {
+    "fold_3": {
+      "ap": 0.32976112655129014,
+      "roc_auc": 0.6664422129435558,
+      "lift": 1.5911341182657628,
+      "late_rate": 0.20724910789463133,
+      "ap_seed_std": 0.0,
+      "roc_auc_seed_std": 0.0
+    },
+    "fold_4": {
+      "ap": 0.40862964447484984,
+      "roc_auc": 0.6987784182390658,
+      "lift": 2.077862162645617,
+      "late_rate": 0.19665868690470126,
+      "ap_seed_std": 0.0,
+      "roc_auc_seed_std": 0.0
+    },
+    "mean_folds_3_4": {
+      "ap": 0.36919538551306996,
+      "roc_auc": 0.6826103155913108,
+      "lift": 1.83449814045569,
+      "late_rate": 0.2019538973996663
+    }
+  },
+  "predictions_rows": 326343,
+  "importance_method": "LogisticRegression.coef_[0] on standardized one-hot inputs (grouped by sum of absolute standardized weights)"
+}

@@ -1,0 +1,153 @@
+{
+  "model_key": "random_forest",
+  "code_commit": "unknown",
+  "run_command": "models/random_forest.py --out /kaggle/working/random_forest --jobs 4",
+  "package_versions": {
+    "python": "3.13.18",
+    "numpy": "2.1.3",
+    "pandas": "2.3.3",
+    "scikit-learn": "1.6.1",
+    "joblib": "1.6.0",
+    "pyarrow": "23.0.1"
+  },
+  "features": [
+    "month",
+    "dow",
+    "dep_hour",
+    "arr_hour",
+    "CRSElapsedTime",
+    "Distance",
+    "is_holiday",
+    "Origin",
+    "Dest",
+    "Reporting_Airline",
+    "wx_skyc1_T2h",
+    "wx_tmpf_T2h",
+    "wx_dwpf_T2h",
+    "wx_drct_T2h",
+    "wx_sknt_T2h",
+    "wx_gust_T2h",
+    "wx_vsby_T2h",
+    "wx_p01i_T2h",
+    "wx_skyl1_T2h",
+    "wx_obs_age_min_T2h",
+    "wx_ts_T2h",
+    "wx_fg_T2h",
+    "wx_ra_T2h",
+    "wx_sn_T2h",
+    "wx_fz_T2h",
+    "wx_br_hz_T2h",
+    "wx_gust_missing_T2h",
+    "wx_skyl1_missing_T2h",
+    "codes_known_T2h",
+    "wx_unmatched_T2h",
+    "n_departed_60min_T2h",
+    "prior_mean_delay_60min_T2h",
+    "late_rate_60min_T2h",
+    "n_scheduled_next_60min_T2h",
+    "has_history_T2h"
+  ],
+  "grid": {
+    "n_estimators": [
+      100
+    ],
+    "max_depth": [
+      12,
+      16,
+      20
+    ],
+    "min_samples_leaf": [
+      25,
+      75,
+      200
+    ],
+    "max_features": [
+      "sqrt",
+      0.3,
+      0.5
+    ],
+    "n_estimators_sweep": [
+      50,
+      100,
+      150,
+      200
+    ]
+  },
+  "boundary_extensions_tested": [
+    {
+      "n_estimators": 100,
+      "max_depth": 24,
+      "min_samples_leaf": 25,
+      "max_features": 0.3
+    },
+    {
+      "n_estimators": 100,
+      "max_depth": 20,
+      "min_samples_leaf": 10,
+      "max_features": 0.3
+    },
+    {
+      "n_estimators": 50,
+      "max_depth": 20,
+      "min_samples_leaf": 25,
+      "max_features": 0.3
+    },
+    {
+      "n_estimators": 150,
+      "max_depth": 20,
+      "min_samples_leaf": 25,
+      "max_features": 0.3
+    },
+    {
+      "n_estimators": 200,
+      "max_depth": 20,
+      "min_samples_leaf": 25,
+      "max_features": 0.3
+    }
+  ],
+  "best_params": {
+    "n_estimators": 150,
+    "max_depth": 20,
+    "min_samples_leaf": 25,
+    "max_features": 0.3
+  },
+  "seeds": [
+    11,
+    23,
+    42
+  ],
+  "tuning_seed": 11,
+  "refit_seed": 11,
+  "refit_seconds": 213.81,
+  "development_rows": 726979,
+  "early_stopping": "none",
+  "approved_exceptions": [],
+  "fold_summary": {
+    "fold_3": {
+      "ap": 0.35607858753092203,
+      "roc_auc": 0.6813651280755902,
+      "lift": 1.718118795049086,
+      "late_rate": 0.20724910789463133,
+      "ap_seed_std": 0.00010227732658174946,
+      "roc_auc_seed_std": 0.000552989030458083
+    },
+    "fold_4": {
+      "ap": 0.42889675755688533,
+      "roc_auc": 0.7133472688687744,
+      "lift": 2.1809194615680734,
+      "late_rate": 0.19665868690470126,
+      "ap_seed_std": 0.00016853309873438764,
+      "roc_auc_seed_std": 0.00047945876474277143
+    },
+    "mean_folds_3_4": {
+      "ap": 0.3924876725439037,
+      "roc_auc": 0.6973561984721823,
+      "lift": 1.9495191283085798,
+      "late_rate": 0.2019538973996663
+    }
+  },
+  "predictions_rows": 326343,
+  "importance_method": "RandomForestClassifier.feature_importances_ (mean decrease in Gini impurity across bootstrap trees)",
+  "bootstrap": true,
+  "n_jobs": 4
+}
